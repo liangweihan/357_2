@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>股票分析小工具</title>
+    
+    <!-- 內部 CSS 樣式 -->
+    <style>
+        /* 基本頁面風格 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 導覽列樣式 */
+        nav {
+            background-color: #2d2d2d;
+            color: #ffffff;
+        }
+
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+        }
+
+        nav ul li {
+            margin-right: 20px;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: #ffffff;
+            padding: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        nav ul li a:hover {
+            background-color: #404040;
+        }
+
+        /* 主要容器樣式 */
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 表單樣式 */
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            width: 200px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* 表格樣式 */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* 顯示價格評估部分樣式 */
+        #priceData {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        #priceData h3 {
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        #priceData p {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+
+        #priceData span {
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 導覽列 -->
+    <nav>
+        <h1>股票分析小工具</h1>
+        <ul>
+            <!-- 導覽列連結 -->
+            <li><a href="https://liangweihan.github.io/357/">357公式</a></li>
+            <li><a href="https://liangweihan.github.io/dividend/">歷年股利</a></li>
+            <li><a href="https://liangweihan.github.io/kely/">凱利公式</a></li>
+            <!-- 可添加更多連結以指向其他頁面 -->
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- 表單用於輸入股票代碼 -->
+        <form id="stockForm">
+            <label for="stockCodeInput">股票代碼: (例如: 0000)</label>
+            <input type="text" id="stockCodeInput">
+            <br />
+            <button type="button" id="calculate">計算</button>
+        </form>
+
+        <!-- 用於顯示爬取的股票資料的表格 -->
+        <div id="stockData">
+            <table id="stockDataTable">
+                <thead>
+                    <tr>
+                        <th>股利發放期間</th>
+                        <th>股利所屬期間</th>
+                        <th>現金股利</th>
+                    </tr>
+                </thead>
+                <tbody id="stockDataTableBody">
+                    <!-- 此處將填入爬取的資料 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 顯示便宜價、合理價和昂貴價 -->
+        <div id="priceData">
+            <h3>價格評估</h3>
+            <p>便宜價: <span id="cheapPrice"></span></p>
+            <p>合理價: <span id="fairPrice"></span></p>
+            <p>昂貴價: <span id="expensivePrice"></span></p>
+        </div>
+
+        <!-- 顯示運用公式的部分 -->
+        <div id="formulaData">
+            <h3>運用公式</h3>
+            <p>便宜價: <span id="cheapPriceFormula"></span> (根據357公式: 現金股利總和 ÷ 5 * 100 / 7)</p>
+            <p>合理價: <span id="fairPriceFormula"></span> (根據357公式: 現金股利總和 ÷ 5 * 100 / 5)</p>
+            <p>昂貴價: <span id="expensivePriceFormula"></span> (根據357公式: 現金股利總和 ÷ 5 * 100 / 3)</p>
+        </div>
+    </div>
+
+    <!-- JavaScript 部分 -->
+    <script>
+        // 當按鈕被點擊時觸發事件
+        document.getElementById("calculate").addEventListener("click", function () {
+            var stockCode = document.getElementById("stockCodeInput").value; // 獲取輸入的股票代碼
+
+            // 發送 POST 請求到後端 Python 應用程式以獲取股票資料
+            fetch('http://127.0.0.1:5000/get_stock_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 'stockCode': stockCode }) // 將股票代碼作為 JSON 發送到後端
+            })
+                .then(response => response.json()) // 處理從後端收到的 JSON 回應
+                .then(data => {
+                    if (data.success) {
+                        var stockDataDiv = document.getElementById("stockData");
+                        stockDataDiv.innerHTML = ""; // 清空原有資料
+
+                        // 建立表格並添加爬取的資料
+                        var table = "<table><tr><th>股利發放期間</th><th>股利所屬期間</th><th>現金股利</th></tr>";
+
+                        // 只顯示前五筆資料
+                        for (var i = 0; i < 5; i++) {
+                            // 檢查資料是否存在
+                            if (data.data.dividend_periods_357[i] && data.data.cash_dividends_357[i]) {
+                                table += "<tr><td>" + (parseInt(data.data.dividend_periods_357[i]) + 1) + "</td><td>" + data.data.dividend_periods_357[i] + "</td><td>" + data.data.cash_dividends_357[i] + "</td></tr>";
+                            }
+                        }
+
+                        table += "</table>";
+                        stockDataDiv.innerHTML = table; // 將表格顯示在網頁上
+
+                        // 顯示便宜價、合理價和昂貴價
+                        document.getElementById("cheapPrice").innerText = data.data.cheap_price || 'N/A';
+                        document.getElementById("fairPrice").innerText = data.data.fair_price || 'N/A';
+                        document.getElementById("expensivePrice").innerText = data.data.expensive_price || 'N/A';
+
+                    } else {
+                        alert("資料獲取失敗: " + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("發生錯誤，請查看控制台獲取更多資訊");
+                });
+        });
+    </script>
+</body>
+
+</html>
